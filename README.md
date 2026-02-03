@@ -33,11 +33,13 @@ Create `timeclaw.config.json` in your OpenClaw workspace:
 ## Commands
 
 ```bash
-# init destination (writes marker under DEST/TimeClaw)
-node src/cli.js init --dest D:/Backups --machine my-pc
+# one-shot setup (creates timeclaw.config.json and initializes DEST/TimeClaw)
+node src/cli.js setup --dest D:/Backups --machine my-pc
 
 # create snapshot (incremental best-effort)
 node src/cli.js snapshot
+# or
+node src/cli.js backup
 
 # list snapshots
 node src/cli.js list
