@@ -81,5 +81,5 @@ node src/cli.js restore <snapshotId> --target ./restore-out
 ## Notes
 
 - TimeClaw uses a content-addressed object store so dedup works on filesystems without hardlinks (exFAT/USB).
-- `prune` currently removes snapshot manifests, but does **not** garbage-collect unreferenced objects yet.
+- `prune` removes snapshot manifests. Run `gc` to garbage-collect unreferenced objects and reclaim space.
 - Cloud backends (S3, etc.) are planned for later versions.
