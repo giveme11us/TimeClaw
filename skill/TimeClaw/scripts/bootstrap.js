@@ -34,7 +34,9 @@ async function exists(p) {
 
 function run(cmd, args, opts = {}) {
   return new Promise((resolve, reject) => {
-    const p = spawn(cmd, args, { stdio: 'inherit', shell: false, ...opts });
+    // On Windows, running .cmd typically requires shell.
+    const useShell = process.platform === 'win32';
+    const p = spawn(cmd, args, { stdio: 'inherit', shell: useShell, ...opts });
     p.on('error', reject);
     p.on('exit', (code) => {
       if (code === 0) resolve();
