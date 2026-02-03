@@ -23,12 +23,30 @@ Minimal example:
 }
 ```
 
-## Commands
+## Agent-first commands
 
-From the repo root:
+The recommended interface is the agent wrapper scripts (they call `bootstrap.js`, which clones/pulls the canonical repo and runs the CLI).
+
+Windows:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\timeclaw-agent.ps1 setup --dest D:\Backups
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\timeclaw-agent.ps1 backup-now --label "first"
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\timeclaw-agent.ps1 list
+```
+
+macOS/Linux:
 
 ```bash
-node ./src/cli.js init --dest D:/Backups --machine my-pc
+bash scripts/timeclaw-agent.sh setup --dest /Volumes/Backups
+bash scripts/timeclaw-agent.sh backup-now --label "first"
+bash scripts/timeclaw-agent.sh list
+```
+
+## Low-level CLI (debug)
+
+```bash
+node ./src/cli.js setup --dest D:/Backups --machine my-pc
 node ./src/cli.js snapshot
 node ./src/cli.js list
 node ./src/cli.js verify <snapshotId>

@@ -158,7 +158,7 @@ async function main() {
 
   switch (parsed.cmd) {
     case 'help': {
-      log(`TimeClaw bootstrap\n\nUsage:\n  node bootstrap.js install [--dir <path>]\n  node bootstrap.js update [--dir <path>]\n  node bootstrap.js run [--dir <path>] -- <timeclaw args...>\n\nCanonical repo: ${CANONICAL_REPO}\nDefault install dir: ${defaultInstallDir()}\n`);
+      log(`TimeClaw bootstrap\n\nUsage:\n  node bootstrap.js install [--dir <path>]\n  node bootstrap.js update [--dir <path>]\n  node bootstrap.js run [--dir <path>] [--no-update] -- <timeclaw args...>\n\nCanonical repo: ${CANONICAL_REPO}\nDefault install dir: ${defaultInstallDir()}\n`);
       return;
     }
 
@@ -175,8 +175,10 @@ async function main() {
     }
 
     case 'run': {
-      // ensure installed (no pull unless user requested)
-      await installOrUpdate({ repoDir, update: false });
+      // By default, keep the installed repo up-to-date so agent-first users always get the latest.
+      // Use --no-update to skip pulling.
+      const noUpdate = !!parsed.flags['no-update'] || !!parsed.flags.noUpdate;
+      await installOrUpdate({ repoDir, update: !noUpdate });
       await assertCanonicalRemote(repoDir);
       const cli = path.join(repoDir, 'src', 'cli.js');
       if (!(await exists(cli))) die(`TimeClaw bootstrap: missing CLI at ${cli}`);
