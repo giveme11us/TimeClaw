@@ -32,10 +32,22 @@ async function exists(p) {
   try { await fs.access(p); return true; } catch { return false; }
 }
 
+function defaultShellFor(cmd) {
+  if (process.platform !== 'win32') return false;
+  const c = String(cmd).toLowerCase();
+  // .cmd/.bat need a shell on Windows.
+  if (c.endsWith('.cmd') || c.endsWith('.bat')) return true;
+  // git resolves fine either way, but shell avoids PATH quirks in some environments.
+  if (c === 'git') return true;
+  return false;
+}
+
 function run(cmd, args, opts = {}) {
   return new Promise((resolve, reject) => {
-    // On Windows, running .cmd typically requires shell.
-    const useShell = process.platform === 'win32';
+    const useShell = Object.prototype.hasOwnProperty.call(opts, 'shell')
+      ? opts.shell
+      : defaultShellFor(cmd);
+
     const p = spawn(cmd, args, { stdio: 'inherit', shell: useShell, ...opts });
     p.on('error', reject);
     p.on('exit', (code) => {
@@ -170,7 +182,8 @@ async function main() {
       if (!(await exists(cli))) die(`TimeClaw bootstrap: missing CLI at ${cli}`);
 
       // run node cli with passthrough args
-      await run(process.execPath, [cli, ...parsed.passthrough], { cwd: repoDir });
+      // Run Node without shell so paths with spaces (Program Files) work on Windows.
+      await run(process.execPath, [cli, ...parsed.passthrough], { cwd: repoDir, shell: false });
       return;
     }
 
