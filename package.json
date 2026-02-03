@@ -1,0 +1,16 @@
+{
+  "name": "timeclaw",
+  "version": "0.1.0",
+  "description": "Time Machine-like snapshots for OpenClaw (config, memory, skills) — cross-platform.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "timeclaw": "./src/cli.js"
+  },
+  "scripts": {
+    "test": "node ./test/smoke.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
