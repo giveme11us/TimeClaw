@@ -153,6 +153,7 @@ function parse(argv) {
 }
 
 async function main() {
+  const callerCwd = process.cwd();
   const parsed = parse(process.argv.slice(2));
   const repoDir = path.resolve(String(parsed.flags.dir || defaultInstallDir()));
 
@@ -185,7 +186,8 @@ async function main() {
 
       // run node cli with passthrough args
       // Run Node without shell so paths with spaces (Program Files) work on Windows.
-      await run(process.execPath, [cli, ...parsed.passthrough], { cwd: repoDir, shell: false });
+      // Run from the caller's working directory so relative config (timeclaw.config.json) lives with the user's OpenClaw workspace.
+      await run(process.execPath, [cli, ...parsed.passthrough], { cwd: callerCwd, shell: false });
       return;
     }
 
