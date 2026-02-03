@@ -76,6 +76,11 @@ async function assertCanonicalRemote(repoDir) {
   }
 }
 
+function npmBin() {
+  // On Windows, npm is typically npm.cmd
+  return process.platform === 'win32' ? 'npm.cmd' : 'npm';
+}
+
 async function installOrUpdate({ repoDir, update }) {
   const gitDir = path.join(repoDir, '.git');
   if (!(await exists(gitDir))) {
@@ -96,10 +101,11 @@ async function installOrUpdate({ repoDir, update }) {
 
   const lock = path.join(repoDir, 'package-lock.json');
   log('TimeClaw: installing dependencies...');
+  const npm = npmBin();
   if (await exists(lock)) {
-    await run('npm', ['ci'], { cwd: repoDir });
+    await run(npm, ['ci'], { cwd: repoDir });
   } else {
-    await run('npm', ['install'], { cwd: repoDir });
+    await run(npm, ['install'], { cwd: repoDir });
   }
 }
 
