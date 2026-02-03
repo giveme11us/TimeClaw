@@ -4,12 +4,33 @@ import os from 'node:os';
 import { initDest } from '../snapshot.js';
 import { safeWriteJson } from '../fsops.js';
 
-function guessOpenclawRoot(cwd) {
+async function pathExists(p) {
+  try {
+    await fs.access(p);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function guessOpenclawRoot(cwd) {
   // Best-effort heuristic:
   // - if cwd contains openclaw.json -> cwd
-  // - else if cwd ends with workspace -> parent
+  // - else if cwd ends with "workspace" and parent contains openclaw.json -> parent
+  // - else if parent contains openclaw.json -> parent
   // - else fallback to cwd
-  return cwd;
+  const here = path.resolve(cwd);
+  const parent = path.dirname(here);
+
+  if (await pathExists(path.join(here, 'openclaw.json'))) return here;
+
+  if (path.basename(here).toLowerCase() === 'workspace') {
+    if (await pathExists(path.join(parent, 'openclaw.json'))) return parent;
+  }
+
+  if (await pathExists(path.join(parent, 'openclaw.json'))) return parent;
+
+  return here;
 }
 
 export async function cmdSetup({ flags }) {
@@ -26,7 +47,7 @@ export async function cmdSetup({ flags }) {
 
   const sourceRoot = flags.source
     ? path.resolve(String(flags.source))
-    : guessOpenclawRoot(cwd);
+    : await guessOpenclawRoot(cwd);
 
   // Initialize destination marker (safety jail)
   await initDest({ dest });
