@@ -10,6 +10,7 @@ Commands:
   timeclaw-agent.ps1 verify <snapshotId>
   timeclaw-agent.ps1 restore <snapshotId> [--target <path>] [--dry-run]
   timeclaw-agent.ps1 prune [--dry-run]
+  timeclaw-agent.ps1 gc [--dry-run]
 
 Config:
 - Uses ./timeclaw.config.json in the current working directory.
@@ -49,6 +50,10 @@ switch ($cmd) {
   }
   'prune' {
     node $bootstrap run -- prune @rest
+    break
+  }
+  'gc' {
+    node $bootstrap run -- gc @rest
     break
   }
   default {
