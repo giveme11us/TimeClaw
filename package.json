@@ -1,7 +1,7 @@
 {
   "name": "timeclaw",
   "version": "0.1.0",
-  "description": "Time Machine-like snapshots for OpenClaw (config, memory, skills) — cross-platform.",
+  "description": "Time Machine-like snapshots for OpenClaw (config, memory, skills) — cross-platform, agent-first.",
   "license": "MIT",
   "type": "module",
   "bin": {
