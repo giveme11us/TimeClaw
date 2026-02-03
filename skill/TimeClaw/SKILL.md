@@ -5,7 +5,7 @@ description: Time Machine-like snapshots for OpenClaw data (config, memory, skil
 
 # TimeClaw
 
-This skill wraps the **TimeClaw** CLI (this repo) to provide Time Machine-like backups for OpenClaw.
+This skill wraps the **TimeClaw** system via a bootstrapper that clones/pulls the canonical repo and runs the CLI. This makes the skill self-installing and self-updating for the community.
 
 ## Config
 

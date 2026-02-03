@@ -9,8 +9,8 @@ Usage examples:
 
 $ErrorActionPreference = 'Stop'
 
-$repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
-$cli = Join-Path $repoRoot 'src\cli.js'
+$bootstrap = Join-Path $PSScriptRoot 'bootstrap.js'
 
-# Forward args to CLI
-node $cli @args
+# Default: run the CLI (no update). Pass CLI args through.
+# Usage: timeclaw.ps1 <timeclaw args...>
+node $bootstrap run -- @args
