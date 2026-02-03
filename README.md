@@ -3,8 +3,8 @@
 TimeClaw is an open-source, cross-platform backup tool inspired by **macOS Time Machine**, designed for **OpenClaw** users.
 
 The goal is a Time Machine-like experience:
-- snapshots that are **browseable as full copies**
-- incremental storage via reusing unchanged files (hardlinks when possible)
+- snapshots with a **browseable history** (via `restore`), designed to work on any filesystem
+- incremental storage via **content-addressed deduplication** (works on exFAT/USB, no hardlinks required)
 - Time Machine-like retention (hourly/daily/weekly) + pruning
 
 ## Install (dev)
@@ -64,11 +64,22 @@ DEST/TimeClaw/
   TIMECLAW_ROOT.json
   machines/<machineId>/
     latest.json
-    snapshots/<snapshotId>/...
+    objects/<aa>/<sha256>         # content-addressed object store
+    snapshots/<snapshotId>/
+      manifest.json               # maps relPath -> sha256 (+ metadata)
+```
+
+### Browsing snapshots
+
+With the content-addressed layout, a snapshot folder contains a `manifest.json` (not a full file tree).
+To "browse" a snapshot, materialize it with:
+
+```bash
+node src/cli.js restore <snapshotId> --target ./restore-out
 ```
 
 ## Notes
 
-- v0.1.0 uses a best-effort unchanged-file heuristic (size + mtime) to decide when to hardlink.
-- If hardlinks are not supported, it falls back to copying.
+- TimeClaw uses a content-addressed object store so dedup works on filesystems without hardlinks (exFAT/USB).
+- `prune` currently removes snapshot manifests, but does **not** garbage-collect unreferenced objects yet.
 - Cloud backends (S3, etc.) are planned for later versions.

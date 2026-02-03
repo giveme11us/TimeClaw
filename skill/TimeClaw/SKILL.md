@@ -1,6 +1,6 @@
 ---
 name: TimeClaw
-description: Time Machine-like snapshots for OpenClaw data (config, memory, skills) with a browseable snapshot history, retention pruning, and restore workflows. Use to initialize a backup destination, create snapshots, list/verify/prune snapshots, and restore OpenClaw state from a point-in-time snapshot.
+description: Time Machine-like snapshots for OpenClaw data (config, memory, skills) with a browseable snapshot history (via restore), retention pruning, and restore workflows. Uses content-addressed deduplication so it works on any filesystem (including exFAT USB drives).
 ---
 
 # TimeClaw
@@ -96,5 +96,7 @@ Notes:
 
 ## Notes
 
-- Safety jail: TimeClaw only writes under `DEST/TimeClaw/`.
+- TimeClaw stores data under `DEST/TimeClaw/` (safety jail).
+- Snapshots are "browseable" by running `restore` into a target folder (snapshots store a `manifest.json`, not a full file tree).
+- Dedup uses a content-addressed object store, so it works on filesystems without hardlinks (exFAT/USB).
 - Default retention is Time Machine-like (hourly/daily/weekly).
