@@ -2,8 +2,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
-import { ensureDir, listFilesRecursive, normalizeRel, copyFileAtomic, tryHardlink, statSafe, sha256File, safeWriteJson, safeReadJson, pathExists } from './fsops.js';
-import { markerPath, snapshotsDir, stagingDir, latestPointerPath, tcRoot } from './layout.js';
+import { ensureDir, listFilesRecursive, normalizeRel, copyFileAtomic, statSafe, sha256File, safeWriteJson, safeReadJson, pathExists } from './fsops.js';
+import { markerPath, snapshotsDir, stagingDir, latestPointerPath, tcRoot, objectsDir } from './layout.js';
 
 export function makeSnapshotId(date = new Date()) {
   // 2026-02-03T17-18-00Z
@@ -34,6 +34,7 @@ export async function createSnapshot({ dest, machineId, sourceRoot, includes, ex
   await initDest({ dest });
   await ensureDir(snapshotsDir(dest, machineId));
   await ensureDir(stagingDir(dest, machineId));
+  await ensureDir(objectsDir(dest, machineId));
 
   const snapshotId = makeSnapshotId();
   const stageBase = path.join(stagingDir(dest, machineId), snapshotId + '.tmp.' + crypto.randomBytes(4).toString('hex'));
@@ -43,9 +44,8 @@ export async function createSnapshot({ dest, machineId, sourceRoot, includes, ex
     return { snapshotId, dryRun: true };
   }
 
-  // Determine previous snapshot for hardlinking
+  // Previous snapshot id (informational)
   const prevId = await readLatest({ dest, machineId });
-  const prevBase = prevId ? path.join(snapshotsDir(dest, machineId), prevId) : null;
 
   await ensureDir(stageBase);
 
@@ -56,7 +56,7 @@ export async function createSnapshot({ dest, machineId, sourceRoot, includes, ex
     sourceRoot,
     label: label || null,
     prev: prevId || null,
-    stats: { files: 0, linked: 0, copied: 0 },
+    stats: { files: 0, reused: 0, stored: 0 },
     sha256: {},
     host: { hostname: os.hostname(), platform: os.platform(), release: os.release() }
   };
@@ -71,12 +71,12 @@ export async function createSnapshot({ dest, machineId, sourceRoot, includes, ex
     if (!st) continue;
 
     if (st.isFile()) {
-      await snapshotOneFile({ abs, rel: relBase, stageBase, prevBase, manifest });
+      await snapshotOneFile({ abs, rel: relBase, dest, machineId, manifest });
     } else if (st.isDirectory()) {
       const files = await listFilesRecursive(abs, { excludes });
       for (const f of files) {
         const rel = normalizeRel(path.join(relBase, f.rel));
-        await snapshotOneFile({ abs: f.abs, rel, stageBase, prevBase, manifest });
+        await snapshotOneFile({ abs: f.abs, rel, dest, machineId, manifest });
       }
     }
   }
@@ -90,35 +90,27 @@ export async function createSnapshot({ dest, machineId, sourceRoot, includes, ex
   return { snapshotId, manifest };
 }
 
-async function snapshotOneFile({ abs, rel, stageBase, prevBase, manifest }) {
-  const dst = path.join(stageBase, rel);
+async function snapshotOneFile({ abs, rel, dest, machineId, manifest }) {
+  // Cross-filesystem dedup strategy:
+  // - Store file contents once in an object store keyed by sha256
+  // - Snapshot manifest maps relPath -> sha256
+  // - Restore materializes a snapshot by copying objects back to target
+  const relNorm = normalizeRel(rel);
 
-  let linked = false;
-  if (prevBase) {
-    const prevPath = path.join(prevBase, rel);
-    const prevStat = await statSafe(prevPath);
-    const curStat = await statSafe(abs);
+  // Hash the source file
+  const hash = await sha256File(abs);
+  manifest.sha256[relNorm] = hash;
+  manifest.stats.files++;
 
-    // cheap unchanged heuristic: size + mtime
-    if (prevStat && curStat && prevStat.size === curStat.size && Math.floor(prevStat.mtimeMs) === Math.floor(curStat.mtimeMs)) {
-      linked = await tryHardlink(prevPath, dst);
-    }
-  }
+  const objDir = path.join(objectsDir(dest, machineId), hash.slice(0, 2));
+  const objPath = path.join(objDir, hash);
 
-  if (linked) {
-    manifest.stats.files++;
-    manifest.stats.linked++;
+  if (await pathExists(objPath)) {
+    manifest.stats.reused++;
     return;
   }
 
-  await copyFileAtomic(abs, dst);
-  manifest.stats.files++;
-  manifest.stats.copied++;
-
-  // store hash for verification (only for copied files to keep cost down)
-  try {
-    manifest.sha256[normalizeRel(rel)] = await sha256File(dst);
-  } catch {
-    // ignore hash errors
-  }
+  await ensureDir(objDir);
+  await copyFileAtomic(abs, objPath);
+  manifest.stats.stored++;
 }

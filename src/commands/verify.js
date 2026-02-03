@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { loadConfig } from '../config.js';
-import { snapshotsDir } from '../layout.js';
+import { snapshotsDir, objectsDir } from '../layout.js';
 import { pathExists, safeReadJson, sha256File } from '../fsops.js';
 
 export async function cmdVerify({ snapshotId, flags }) {
@@ -14,10 +14,11 @@ export async function cmdVerify({ snapshotId, flags }) {
   let ok = true;
 
   for (const [rel, expected] of Object.entries(manifest.sha256 || {})) {
-    const fp = path.join(base, rel);
+    const hash = String(expected);
+    const obj = path.join(objectsDir(config.dest, config.machineId), hash.slice(0, 2), hash);
     try {
-      const got = await sha256File(fp);
-      const match = got === expected;
+      const got = await sha256File(obj);
+      const match = got === hash;
       if (!match) ok = false;
       checks.push({ rel, match });
     } catch (e) {

@@ -17,6 +17,10 @@ export function snapshotsDir(dest, machineId) {
   return path.join(machineRoot(dest, machineId), 'snapshots');
 }
 
+export function objectsDir(dest, machineId) {
+  return path.join(machineRoot(dest, machineId), 'objects');
+}
+
 export function stagingDir(dest, machineId) {
   return path.join(machineRoot(dest, machineId), 'staging');
 }
