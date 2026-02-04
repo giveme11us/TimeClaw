@@ -50,11 +50,29 @@ Create `timeclaw.config.json` in your OpenClaw workspace:
   "dest": "D:/Backups",
   "machineId": "my-pc",
   "sourceRoot": "C:/Users/you/.openclaw",
-  "includes": ["openclaw.json", "workspace/skills", "MEMORY.md", "memory"],
-  "excludes": ["workspace/tmp", "media", "tmp"],
+  "presets": ["openclaw"],
+  "includes": ["workspace/skills/my-skill/**"],
+  "excludes": ["workspace/tmp/**", "**/*.tmp"],
   "retention": { "hourlyHours": 24, "dailyDays": 30, "weeklyWeeks": 520 }
 }
 ```
+
+### Presets
+
+Available presets (applied before `includes`/`excludes`):
+- `openclaw`: core OpenClaw data (`openclaw.json`, `MEMORY.md`, `memory/**`, `workspace/skills/**`) with sensible excludes.
+- `openclaw_all`: broader workspace capture (`workspace/**`) with extra excludes for temp and VCS folders.
+
+If you omit `preset(s)` and `includes`/`excludes`, TimeClaw defaults to `openclaw`.
+
+### Pattern syntax
+
+`includes` and `excludes` are glob-like patterns relative to `sourceRoot`:
+- `*` matches within a path segment, `?` matches one character, `**` matches across folders.
+- A plain path like `memory` also matches everything under it.
+- Trailing `/` is treated as a directory (expanded to `/**`).
+
+Schema reference: `timeclaw.config.schema.json`
 
 ## Commands
 

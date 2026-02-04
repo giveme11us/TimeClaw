@@ -32,8 +32,7 @@ export async function cmdInit({ flags }) {
       dest,
       machineId,
       sourceRoot: process.cwd(),
-      includes: ['openclaw.json', 'workspace/skills', 'MEMORY.md', 'memory'],
-      excludes: ['workspace/tmp', 'media', 'tmp'],
+      presets: ['openclaw'],
       retention: { hourlyHours: 24, dailyDays: 30, weeklyWeeks: 520 }
     };
     await safeWriteJson(configPath, cfg);

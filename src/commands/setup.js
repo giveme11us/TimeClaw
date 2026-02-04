@@ -80,8 +80,7 @@ export async function cmdSetup({ flags }) {
     dest,
     machineId,
     sourceRoot,
-    includes: ['openclaw.json', 'workspace/skills', 'MEMORY.md', 'memory'],
-    excludes: ['workspace/tmp', 'media', 'tmp'],
+    presets: ['openclaw'],
     retention: { hourlyHours: 24, dailyDays: 30, weeklyWeeks: 520 }
   };
 

@@ -65,28 +65,9 @@ export async function createSnapshot({ dest, machineId, sourceRoot, includes, ex
     host: { hostname: os.hostname(), platform: os.platform(), release: os.release() }
   };
 
-  const includeAbs = includes.map((p) => path.resolve(sourceRoot, p));
-  const filesToSnapshot = [];
+  const files = await listFilesRecursive(sourceRoot, { includes, excludes });
 
-  for (let i = 0; i < includeAbs.length; i++) {
-    const abs = includeAbs[i];
-    const relBase = normalizeRel(path.relative(sourceRoot, abs));
-
-    const st = await statSafe(abs);
-    if (!st) continue;
-
-    if (st.isFile()) {
-      filesToSnapshot.push({ abs, rel: relBase });
-    } else if (st.isDirectory()) {
-      const files = await listFilesRecursive(abs, { excludes });
-      for (const f of files) {
-        const rel = normalizeRel(path.join(relBase, f.rel));
-        filesToSnapshot.push({ abs: f.abs, rel });
-      }
-    }
-  }
-
-  await runWithLimit(filesToSnapshot, HASH_CONCURRENCY, (entry) =>
+  await runWithLimit(files, HASH_CONCURRENCY, (entry) =>
     snapshotOneFile({ abs: entry.abs, rel: entry.rel, dest, machineId, manifest, prevIndex })
   );
 
@@ -119,6 +100,7 @@ async function snapshotOneFile({ abs, rel, dest, machineId, manifest, prevIndex 
   } else {
     hash = await sha256File(abs);
   }
+
   manifest.sha256[relNorm] = hash;
   manifest.files[relNorm] = { sha256: hash, size, mtimeMs };
   manifest.stats.files++;

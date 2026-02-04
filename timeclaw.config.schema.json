@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TimeClaw Config",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "dest": {
+      "type": "string",
+      "description": "Destination root for TimeClaw backups."
+    },
+    "machineId": {
+      "type": "string",
+      "description": "Machine identifier used for snapshot grouping."
+    },
+    "sourceRoot": {
+      "type": "string",
+      "description": "Root directory to scan for snapshots."
+    },
+    "preset": {
+      "type": "string",
+      "description": "Single preset name to apply."
+    },
+    "presets": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Preset names to apply before includes/excludes."
+    },
+    "includes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Glob-like include patterns (relative to sourceRoot)."
+    },
+    "excludes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Glob-like exclude patterns (relative to sourceRoot)."
+    },
+    "retention": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "hourlyHours": { "type": "number" },
+        "dailyDays": { "type": "number" },
+        "weeklyWeeks": { "type": "number" }
+      },
+      "description": "Retention settings for prune."
+    },
+    "maxBytes": {
+      "type": "number",
+      "description": "Optional cap: when exceeded, prune oldest."
+    }
+  },
+  "required": ["dest"]
+}

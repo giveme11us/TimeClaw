@@ -2,7 +2,6 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
-import { fileURLToPath } from 'node:url';
 import { cmdInit } from '../src/commands/init.js';
 import { cmdSnapshot } from '../src/commands/snapshot.js';
 import { cmdList } from '../src/commands/list.js';
@@ -28,19 +27,29 @@ async function main() {
   const source = await mkTempDir('timeclaw-src');
 
   // fake openclaw structure
-  await fs.mkdir(path.join(source, 'workspace', 'skills'), { recursive: true });
+  await fs.mkdir(path.join(source, 'workspace', 'skills', 'skill-a'), { recursive: true });
+  await fs.mkdir(path.join(source, 'workspace', 'tmp'), { recursive: true });
   await fs.mkdir(path.join(source, 'memory'), { recursive: true });
+  await fs.mkdir(path.join(source, 'media'), { recursive: true });
+
   await fs.writeFile(path.join(source, 'openclaw.json'), '{"hello":true}\n');
   await fs.writeFile(path.join(source, 'MEMORY.md'), '# hi\n');
   await fs.writeFile(path.join(source, 'memory', '2026-01-01.md'), 'x\n');
+
+  // should be included by preset openclaw
+  await fs.writeFile(path.join(source, 'workspace', 'skills', 'skill-a', 'index.js'), 'console.log("ok")\n');
+
+  // should be excluded by preset openclaw
+  await fs.writeFile(path.join(source, 'workspace', 'tmp', 'cache.txt'), 'nope\n');
+  await fs.writeFile(path.join(source, 'memory', 'draft.tmp'), 'nope\n');
 
   const cfgPath = path.join(source, 'timeclaw.config.json');
   await writeJson(cfgPath, {
     dest,
     machineId: 'test-machine',
     sourceRoot: source,
-    includes: ['openclaw.json', 'MEMORY.md', 'memory'],
-    excludes: ['media', 'tmp', 'workspace/tmp']
+    preset: 'openclaw',
+    excludes: ['**/*.tmp']
   });
 
   const cwdBefore = process.cwd();
@@ -57,6 +66,10 @@ async function main() {
   await cmdVerify({ snapshotId: first, flags: { config: cfgPath } });
 
   const manifest1 = await readJson(path.join(snapsDir, first, 'manifest.json'));
+  const keys1 = Object.keys(manifest1.sha256 || {}).sort();
+  if (!keys1.includes('workspace/skills/skill-a/index.js')) throw new Error('missing included skill file');
+  if (keys1.includes('workspace/tmp/cache.txt')) throw new Error('excluded tmp file included');
+  if (keys1.includes('memory/draft.tmp')) throw new Error('excluded glob file included');
 
   await cmdSnapshot({ flags: { config: cfgPath } });
 
