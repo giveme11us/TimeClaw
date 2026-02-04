@@ -15,6 +15,32 @@ npm test
 node src/cli.js help
 ```
 
+## Agent-first quickstart
+
+Run these from your OpenClaw workspace (the folder that contains `openclaw.json`).
+All commands return JSON so agents can parse `snapshotId` and paths.
+
+```bash
+# 1) one-shot setup (creates timeclaw.config.json and initializes DEST/TimeClaw)
+node src/cli.js setup --dest D:/Backups --machine my-pc
+
+# 2) take a snapshot (incremental, content-addressed)
+node src/cli.js snapshot
+
+# 3) list snapshots (grab an id)
+node src/cli.js list
+
+# 4) verify a snapshot (rehash against objects store)
+node src/cli.js verify <snapshotId>
+
+# 5) restore a snapshot to a new folder
+node src/cli.js restore <snapshotId> --target ./restore-out
+
+# 6) prune + gc (prune removes manifests, gc removes unreferenced objects)
+node src/cli.js prune
+node src/cli.js gc
+```
+
 ## Config (recommended)
 
 Create `timeclaw.config.json` in your OpenClaw workspace:
@@ -53,6 +79,10 @@ node src/cli.js restore 2026-02-03T17-00-00.000Z --target ./restore-out
 # prune using Time Machine-like retention
 node src/cli.js prune --dry-run
 node src/cli.js prune
+
+# garbage-collect unreferenced objects
+node src/cli.js gc --dry-run
+node src/cli.js gc
 ```
 
 ## Destination layout
