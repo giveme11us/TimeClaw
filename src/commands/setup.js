@@ -3,6 +3,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { initDest } from '../snapshot.js';
 import { safeWriteJson } from '../fsops.js';
+import { UserError } from '../errors.js';
 
 async function pathExists(p) {
   try {
@@ -37,7 +38,14 @@ export async function cmdSetup({ flags }) {
   const cwd = process.cwd();
 
   const dest = flags.dest ? path.resolve(String(flags.dest)) : null;
-  if (!dest) throw new Error('setup requires --dest <path>');
+  if (!dest) {
+    throw new UserError('setup requires --dest <path>', {
+      code: 'USAGE',
+      exitCode: 2,
+      hint: 'Provide a destination path for snapshots.',
+      next: 'timeclaw setup --dest <path>'
+    });
+  }
 
   const machineId = String(flags.machine || flags.machineId || os.hostname());
 
@@ -57,7 +65,12 @@ export async function cmdSetup({ flags }) {
   try {
     await fs.access(configPath);
     if (!force) {
-      throw new Error(`Config already exists at ${configPath}. Re-run with --force to overwrite.`);
+      throw new UserError(`Config already exists at ${configPath}`, {
+        code: 'CONFIG_EXISTS',
+        exitCode: 3,
+        hint: 'Re-run with --force to overwrite.',
+        next: `timeclaw setup --dest "${dest}" --force`
+      });
     }
   } catch {
     // ok
@@ -73,5 +86,19 @@ export async function cmdSetup({ flags }) {
   };
 
   await safeWriteJson(configPath, cfg);
-  console.log(JSON.stringify({ ok: true, action: 'setup', config: configPath, dest, machineId, sourceRoot }, null, 2));
+  console.log(
+    JSON.stringify(
+      {
+        ok: true,
+        action: 'setup',
+        config: configPath,
+        dest,
+        machineId,
+        sourceRoot,
+        next: 'timeclaw snapshot'
+      },
+      null,
+      2
+    )
+  );
 }

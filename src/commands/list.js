@@ -19,7 +19,7 @@ function tsFromId(id) {
 }
 
 export async function cmdList({ flags }) {
-  const { config } = await loadConfig({ configPath: flags.config });
+  const { config } = await loadConfig({ configPath: flags.config, requireInitialized: true });
   const dir = snapshotsDir(config.dest, config.machineId);
   if (!(await pathExists(dir))) {
     console.log(JSON.stringify({ snapshots: [] }, null, 2));

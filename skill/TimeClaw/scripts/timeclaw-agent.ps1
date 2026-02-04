@@ -21,7 +21,21 @@ $ErrorActionPreference = 'Stop'
 $bootstrap = Join-Path $PSScriptRoot 'bootstrap.js'
 
 $cmd = $args[0]
-if (-not $cmd) { throw "Usage: timeclaw-agent.ps1 <setup|backup-now|list|verify|restore|prune> ..." }
+function Show-Usage {
+  Write-Error "Usage: timeclaw-agent.ps1 <setup|backup-now|list|verify|restore|prune|gc> ..."
+  Write-Error "Next:  timeclaw-agent.ps1 setup --dest <path>"
+}
+
+function Invoke-TimeClaw {
+  param([string[]]$Args)
+  node $bootstrap run -- @Args
+  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
+
+if (-not $cmd) {
+  Show-Usage
+  exit 2
+}
 
 $rest = @()
 if ($args.Length -gt 1) { $rest = $args[1..($args.Length-1)] }
@@ -29,34 +43,43 @@ if ($args.Length -gt 1) { $rest = $args[1..($args.Length-1)] }
 switch ($cmd) {
   'setup' {
     # forward to CLI setup
-    node $bootstrap run -- setup @rest
+    $argsList = @('setup') + $rest
+    Invoke-TimeClaw $argsList
     break
   }
   'backup-now' {
-    node $bootstrap run -- backup @rest
+    $argsList = @('backup') + $rest
+    Invoke-TimeClaw $argsList
     break
   }
   'list' {
-    node $bootstrap run -- list @rest
+    $argsList = @('list') + $rest
+    Invoke-TimeClaw $argsList
     break
   }
   'verify' {
-    node $bootstrap run -- verify @rest
+    $argsList = @('verify') + $rest
+    Invoke-TimeClaw $argsList
     break
   }
   'restore' {
-    node $bootstrap run -- restore @rest
+    $argsList = @('restore') + $rest
+    Invoke-TimeClaw $argsList
     break
   }
   'prune' {
-    node $bootstrap run -- prune @rest
+    $argsList = @('prune') + $rest
+    Invoke-TimeClaw $argsList
     break
   }
   'gc' {
-    node $bootstrap run -- gc @rest
+    $argsList = @('gc') + $rest
+    Invoke-TimeClaw $argsList
     break
   }
   default {
-    throw "Unknown command: $cmd"
+    Show-Usage
+    Write-Error "Unknown command: $cmd"
+    exit 2
   }
 }

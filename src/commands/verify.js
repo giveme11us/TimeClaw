@@ -1,13 +1,21 @@
 import path from 'node:path';
 import { loadConfig } from '../config.js';
+import { UserError } from '../errors.js';
 import { snapshotsDir, objectsDir } from '../layout.js';
 import { pathExists, safeReadJson, sha256File } from '../fsops.js';
 
 export async function cmdVerify({ snapshotId, flags }) {
-  const { config } = await loadConfig({ configPath: flags.config });
+  const { config } = await loadConfig({ configPath: flags.config, requireInitialized: true });
   const base = path.join(snapshotsDir(config.dest, config.machineId), snapshotId);
   const manifestPath = path.join(base, 'manifest.json');
-  if (!(await pathExists(manifestPath))) throw new Error(`manifest not found: ${manifestPath}`);
+  if (!(await pathExists(manifestPath))) {
+    throw new UserError(`Snapshot not found: ${snapshotId}`, {
+      code: 'SNAPSHOT_NOT_FOUND',
+      exitCode: 6,
+      hint: 'Run list to see available snapshots.',
+      next: 'timeclaw list'
+    });
+  }
 
   const manifest = await safeReadJson(manifestPath);
   const checks = [];

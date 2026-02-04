@@ -14,7 +14,7 @@ function tsFromId(id) {
 }
 
 export async function cmdPrune({ flags }) {
-  const { config } = await loadConfig({ configPath: flags.config });
+  const { config } = await loadConfig({ configPath: flags.config, requireInitialized: true });
   const dryRun = !!flags['dry-run'] || !!flags.dryRun;
 
   const dir = snapshotsDir(config.dest, config.machineId);
