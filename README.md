@@ -85,6 +85,34 @@ node src/cli.js gc --dry-run
 node src/cli.js gc
 ```
 
+## Maintenance: prune + gc (CAS mode)
+
+TimeClaw uses a content-addressed store (CAS): snapshots are manifests that point to hashed objects. That means:
+- `prune` deletes snapshot manifests (and their folders) based on retention rules. It does **not** delete the underlying objects.
+- `gc` scans all remaining manifests, keeps referenced objects, and removes **unreferenced** objects to reclaim space.
+
+### Recommended workflow
+
+```bash
+# 1) preview which snapshots will be removed
+node src/cli.js prune --dry-run
+
+# 2) apply snapshot pruning
+node src/cli.js prune
+
+# 3) preview object deletions after prune
+node src/cli.js gc --dry-run
+
+# 4) reclaim space
+node src/cli.js gc
+```
+
+### Safety notes
+
+- Prefer `--dry-run` first. Both commands return a JSON summary so you can confirm what would be removed.
+- Run `gc` only after you are confident your snapshots are complete and their `manifest.json` files exist. Objects referenced by missing or corrupt manifests will be treated as unreferenced and eligible for removal.
+- If you keep snapshots for legal/restore reasons, do not run `prune` (and therefore `gc`) until you are ready to discard those snapshots.
+
 ## Destination layout
 
 TimeClaw operates only under a safe root:
