@@ -41,7 +41,7 @@ async function main() {
   const { command, args, flags } = parseArgs(process.argv.slice(2));
 
   if (!command || command === 'help' || flags.help) {
-    console.log(`TimeClaw (timeclaw)\n\nCommands:\n  setup --dest <path> [--source <path>] [--machine <id>] [--config <path>] [--force]\n  init --dest <path> [--machine <id>] [--config <path>]\n  snapshot [--config <path>] [--label <text>] [--dry-run]\n  backup [--config <path>] [--label <text>] [--dry-run]   (alias of snapshot)\n  list [--config <path>]\n  verify <snapshotId> [--config <path>]\n  restore <snapshotId> [--config <path>] [--target <path>] [--dry-run]\n  prune [--config <path>] [--dry-run]\n  gc [--config <path>] [--dry-run]\n`);
+    console.log(`TimeClaw (timeclaw)\n\nCommands:\n  setup --dest <path> [--source <path>] [--machine <id>] [--config <path>] [--force]\n  init --dest <path> [--machine <id>] [--config <path>]\n  snapshot [--config <path>] [--label <text>] [--dry-run]\n  backup [--config <path>] [--label <text>] [--dry-run]   (alias of snapshot)\n  list [--config <path>]\n  verify <snapshotId> [--config <path>] [--migrate]\n  restore <snapshotId> [--config <path>] [--target <path>] [--dry-run] [--migrate]\n  prune [--config <path>] [--dry-run]\n  gc [--config <path>] [--dry-run]\n`);
     process.exit(0);
   }
 

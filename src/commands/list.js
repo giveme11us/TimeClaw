@@ -3,6 +3,7 @@ import path from 'node:path';
 import { loadConfig } from '../config.js';
 import { snapshotsDir } from '../layout.js';
 import { pathExists, safeReadJson } from '../fsops.js';
+import { detectSnapshotLayout } from '../legacy.js';
 
 function tsFromId(id) {
   // id is ISO with ':' replaced by '-'
@@ -32,14 +33,26 @@ export async function cmdList({ flags }) {
   for (const ent of entries) {
     if (!ent.isDirectory()) continue;
     const id = ent.name;
-    const manifestPath = path.join(dir, id, 'manifest.json');
+    const snapDir = path.join(dir, id);
+    const manifestPath = path.join(snapDir, 'manifest.json');
     let manifest = null;
+    let legacy = false;
+
     if (await pathExists(manifestPath)) {
       try { manifest = await safeReadJson(manifestPath); } catch {}
     }
-    snaps.push({ id, tsMs: tsFromId(id), manifest });
+
+    if (!manifest || !manifest.sha256) {
+      const layout = await detectSnapshotLayout(snapDir);
+      legacy = layout.layout === 'legacy-tree';
+      if (layout.layout === 'cas' && layout.manifest) {
+        manifest = layout.manifest;
+      }
+    }
+
+    snaps.push({ id, tsMs: tsFromId(id), manifest, legacy });
   }
 
   snaps.sort((a, b) => a.tsMs - b.tsMs);
-  console.log(JSON.stringify({ snapshots: snaps.map(({ id, tsMs, manifest }) => ({ id, tsMs, label: manifest?.label || null, files: manifest?.stats?.files ?? null })) }, null, 2));
+  console.log(JSON.stringify({ snapshots: snaps.map(({ id, tsMs, manifest, legacy }) => ({ id, tsMs, label: manifest?.label || null, files: manifest?.stats?.files ?? null, legacy })) }, null, 2));
 }
