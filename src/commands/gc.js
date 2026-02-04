@@ -5,7 +5,7 @@ import { snapshotsDir, objectsDir } from '../layout.js';
 import { pathExists, safeReadJson } from '../fsops.js';
 
 export async function cmdGc({ flags }) {
-  const { config } = await loadConfig({ configPath: flags.config });
+  const { config } = await loadConfig({ configPath: flags.config, requireInitialized: true });
   const dryRun = !!flags['dry-run'] || !!flags.dryRun;
 
   const snapsBase = snapshotsDir(config.dest, config.machineId);

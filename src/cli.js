@@ -7,11 +7,21 @@ import { cmdRestore } from './commands/restore.js';
 import { cmdPrune } from './commands/prune.js';
 import { cmdGc } from './commands/gc.js';
 import { cmdSetup } from './commands/setup.js';
+import { UserError, asUserError, formatUserError } from './errors.js';
 
-function die(msg, code = 1) {
-  console.error(msg);
-  process.exit(code);
-}
+const USAGE = `TimeClaw (timeclaw)
+
+Commands:
+  setup --dest <path> [--source <path>] [--machine <id>] [--config <path>] [--force]
+  init --dest <path> [--machine <id>] [--config <path>]
+  snapshot [--config <path>] [--label <text>] [--dry-run]
+  backup [--config <path>] [--label <text>] [--dry-run]   (alias of snapshot)
+  list [--config <path>]
+  verify <snapshotId> [--config <path>]
+  restore <snapshotId> [--config <path>] [--target <path>] [--dry-run]
+  prune [--config <path>] [--dry-run]
+  gc [--config <path>] [--dry-run]
+`;
 
 function parseArgs(argv) {
   const [command, ...rest] = argv;
@@ -41,7 +51,7 @@ async function main() {
   const { command, args, flags } = parseArgs(process.argv.slice(2));
 
   if (!command || command === 'help' || flags.help) {
-    console.log(`TimeClaw (timeclaw)\n\nCommands:\n  setup --dest <path> [--source <path>] [--machine <id>] [--config <path>] [--force]\n  init --dest <path> [--machine <id>] [--config <path>]\n  snapshot [--config <path>] [--label <text>] [--dry-run]\n  backup [--config <path>] [--label <text>] [--dry-run]   (alias of snapshot)\n  list [--config <path>]\n  verify <snapshotId> [--config <path>]\n  restore <snapshotId> [--config <path>] [--target <path>] [--dry-run]\n  prune [--config <path>] [--dry-run]\n  gc [--config <path>] [--dry-run]\n`);
+    console.log(USAGE);
     process.exit(0);
   }
 
@@ -57,19 +67,43 @@ async function main() {
       case 'list':
         return await cmdList({ flags });
       case 'verify':
-        if (!args[0]) die('verify requires <snapshotId>');
+        if (!args[0]) {
+          throw new UserError('verify requires <snapshotId>', {
+            code: 'USAGE',
+            exitCode: 2,
+            hint: 'Provide a snapshot id from the list command.',
+            next: 'timeclaw list'
+          });
+        }
         return await cmdVerify({ snapshotId: args[0], flags });
       case 'restore':
-        if (!args[0]) die('restore requires <snapshotId>');
+        if (!args[0]) {
+          throw new UserError('restore requires <snapshotId>', {
+            code: 'USAGE',
+            exitCode: 2,
+            hint: 'Provide a snapshot id from the list command.',
+            next: 'timeclaw list'
+          });
+        }
         return await cmdRestore({ snapshotId: args[0], flags });
       case 'prune':
         return await cmdPrune({ flags });
       case 'gc':
         return await cmdGc({ flags });
       default:
-        die(`Unknown command: ${command}`);
+        throw new UserError(`Unknown command: ${command}`, {
+          code: 'USAGE',
+          exitCode: 2,
+          hint: 'Run timeclaw help to see available commands.',
+          next: 'timeclaw help'
+        });
     }
   } catch (err) {
+    const normalized = asUserError(err, { action: 'running timeclaw' }) || err;
+    if (normalized instanceof UserError) {
+      console.error(formatUserError(normalized));
+      process.exit(normalized.exitCode || 1);
+    }
     console.error(err?.stack || String(err));
     process.exit(1);
   }

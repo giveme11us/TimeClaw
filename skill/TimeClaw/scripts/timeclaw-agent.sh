@@ -29,8 +29,12 @@ case "$cmd" in
   prune)
     node "$BOOTSTRAP" run -- prune "$@"
     ;;
+  gc)
+    node "$BOOTSTRAP" run -- gc "$@"
+    ;;
   *)
-    echo "Usage: timeclaw-agent.sh {setup|backup-now|list|verify|restore|prune} ..." >&2
-    exit 1
+    echo "Usage: timeclaw-agent.sh {setup|backup-now|list|verify|restore|prune|gc} ..." >&2
+    echo "Next:  timeclaw-agent.sh setup --dest <path>" >&2
+    exit 2
     ;;
 esac
