@@ -17,8 +17,8 @@ Commands:
   snapshot [--config <path>] [--label <text>] [--dry-run]
   backup [--config <path>] [--label <text>] [--dry-run]   (alias of snapshot)
   list [--config <path>]
-  verify <snapshotId> [--config <path>]
-  restore <snapshotId> [--config <path>] [--target <path>] [--dry-run]
+  verify <snapshotId> [--config <path>] [--migrate]
+  restore <snapshotId> [--config <path>] [--target <path>] [--dry-run] [--migrate]
   prune [--config <path>] [--dry-run]
   gc [--config <path>] [--dry-run]
 `;

@@ -76,6 +76,10 @@ node src/cli.js verify 2026-02-03T17-00-00.000Z
 # restore snapshot to new folder
 node src/cli.js restore 2026-02-03T17-00-00.000Z --target ./restore-out
 
+# migrate a legacy snapshot tree into CAS + manifest (optional)
+node src/cli.js verify 2026-02-03T17-00-00.000Z --migrate
+node src/cli.js restore 2026-02-03T17-00-00.000Z --migrate
+
 # prune using Time Machine-like retention
 node src/cli.js prune --dry-run
 node src/cli.js prune
@@ -135,6 +139,16 @@ To "browse" a snapshot, materialize it with:
 ```bash
 node src/cli.js restore <snapshotId> --target ./restore-out
 ```
+
+### Legacy snapshots (pre-CAS)
+
+Older TimeClaw versions stored full file trees directly under `snapshots/<snapshotId>/` without a `manifest.json`.
+Current behavior:
+- `list` marks these snapshots as `legacy: true`.
+- `restore` will copy files directly from the snapshot tree and prints a warning.
+- `verify` cannot verify without a manifest; run with `--migrate` to convert.
+
+`--migrate` converts a legacy snapshot tree into CAS objects plus a `manifest.json` in-place so future `verify`, `restore`, and `gc` can use it.
 
 ## Notes
 
