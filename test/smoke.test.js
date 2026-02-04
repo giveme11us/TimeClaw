@@ -48,7 +48,8 @@ async function main() {
     dest,
     machineId: 'test-machine',
     sourceRoot: source,
-    preset: 'openclaw'
+    preset: 'openclaw',
+    excludes: ['**/*.tmp']
   });
 
   const cwdBefore = process.cwd();
