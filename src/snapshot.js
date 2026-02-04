@@ -5,6 +5,8 @@ import crypto from 'node:crypto';
 import { ensureDir, listFilesRecursive, normalizeRel, copyFileAtomic, statSafe, sha256File, safeWriteJson, safeReadJson, pathExists } from './fsops.js';
 import { markerPath, snapshotsDir, stagingDir, latestPointerPath, tcRoot, objectsDir } from './layout.js';
 
+const HASH_CONCURRENCY = Math.max(1, Math.min(8, os.cpus().length || 1));
+
 export function makeSnapshotId(date = new Date()) {
   // 2026-02-03T17-18-00Z
   return date.toISOString().replace(/:/g, '-');
@@ -46,6 +48,7 @@ export async function createSnapshot({ dest, machineId, sourceRoot, includes, ex
 
   // Previous snapshot id (informational)
   const prevId = await readLatest({ dest, machineId });
+  const prevIndex = await loadPrevIndex({ dest, machineId, prevId });
 
   await ensureDir(stageBase);
 
@@ -58,10 +61,12 @@ export async function createSnapshot({ dest, machineId, sourceRoot, includes, ex
     prev: prevId || null,
     stats: { files: 0, reused: 0, stored: 0 },
     sha256: {},
+    files: {},
     host: { hostname: os.hostname(), platform: os.platform(), release: os.release() }
   };
 
   const includeAbs = includes.map((p) => path.resolve(sourceRoot, p));
+  const filesToSnapshot = [];
 
   for (let i = 0; i < includeAbs.length; i++) {
     const abs = includeAbs[i];
@@ -71,15 +76,19 @@ export async function createSnapshot({ dest, machineId, sourceRoot, includes, ex
     if (!st) continue;
 
     if (st.isFile()) {
-      await snapshotOneFile({ abs, rel: relBase, dest, machineId, manifest });
+      filesToSnapshot.push({ abs, rel: relBase });
     } else if (st.isDirectory()) {
       const files = await listFilesRecursive(abs, { excludes });
       for (const f of files) {
         const rel = normalizeRel(path.join(relBase, f.rel));
-        await snapshotOneFile({ abs: f.abs, rel, dest, machineId, manifest });
+        filesToSnapshot.push({ abs: f.abs, rel });
       }
     }
   }
+
+  await runWithLimit(filesToSnapshot, HASH_CONCURRENCY, (entry) =>
+    snapshotOneFile({ abs: entry.abs, rel: entry.rel, dest, machineId, manifest, prevIndex })
+  );
 
   await safeWriteJson(path.join(stageBase, 'manifest.json'), manifest);
 
@@ -90,16 +99,28 @@ export async function createSnapshot({ dest, machineId, sourceRoot, includes, ex
   return { snapshotId, manifest };
 }
 
-async function snapshotOneFile({ abs, rel, dest, machineId, manifest }) {
+async function snapshotOneFile({ abs, rel, dest, machineId, manifest, prevIndex }) {
   // Cross-filesystem dedup strategy:
   // - Store file contents once in an object store keyed by sha256
   // - Snapshot manifest maps relPath -> sha256
   // - Restore materializes a snapshot by copying objects back to target
   const relNorm = normalizeRel(rel);
 
-  // Hash the source file
-  const hash = await sha256File(abs);
+  const st = await statSafe(abs);
+  if (!st || !st.isFile()) return;
+
+  const size = st.size;
+  const mtimeMs = Math.trunc(st.mtimeMs);
+
+  const prev = prevIndex ? prevIndex.get(relNorm) : null;
+  let hash = null;
+  if (prev && prev.size === size && prev.mtimeMs === mtimeMs && prev.sha256) {
+    hash = prev.sha256;
+  } else {
+    hash = await sha256File(abs);
+  }
   manifest.sha256[relNorm] = hash;
+  manifest.files[relNorm] = { sha256: hash, size, mtimeMs };
   manifest.stats.files++;
 
   const objDir = path.join(objectsDir(dest, machineId), hash.slice(0, 2));
@@ -113,4 +134,42 @@ async function snapshotOneFile({ abs, rel, dest, machineId, manifest }) {
   await ensureDir(objDir);
   await copyFileAtomic(abs, objPath);
   manifest.stats.stored++;
+}
+
+async function loadPrevIndex({ dest, machineId, prevId }) {
+  if (!prevId) return null;
+  const manifestPath = path.join(snapshotsDir(dest, machineId), prevId, 'manifest.json');
+  if (!(await pathExists(manifestPath))) return null;
+  let manifest = null;
+  try {
+    manifest = await safeReadJson(manifestPath);
+  } catch {
+    return null;
+  }
+  const files = manifest?.files;
+  if (!files || typeof files !== 'object') return null;
+  const index = new Map();
+  for (const [rel, meta] of Object.entries(files)) {
+    if (!meta || typeof meta !== 'object') continue;
+    const sha256 = meta.sha256;
+    const size = Number(meta.size);
+    const mtimeMs = Math.trunc(Number(meta.mtimeMs));
+    if (!sha256 || !Number.isFinite(size) || !Number.isFinite(mtimeMs)) continue;
+    index.set(normalizeRel(rel), { sha256, size, mtimeMs });
+  }
+  return index.size ? index : null;
+}
+
+async function runWithLimit(items, limit, fn) {
+  if (!items.length) return;
+  const actual = Math.max(1, Math.min(limit, items.length));
+  let index = 0;
+  const workers = Array.from({ length: actual }, async () => {
+    while (true) {
+      const i = index++;
+      if (i >= items.length) break;
+      await fn(items[i]);
+    }
+  });
+  await Promise.all(workers);
 }

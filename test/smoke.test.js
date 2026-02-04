@@ -18,6 +18,11 @@ async function writeJson(p, obj) {
   await fs.writeFile(p, JSON.stringify(obj, null, 2));
 }
 
+async function readJson(p) {
+  const raw = await fs.readFile(p, 'utf8');
+  return JSON.parse(raw);
+}
+
 async function main() {
   const dest = await mkTempDir('timeclaw-dest');
   const source = await mkTempDir('timeclaw-src');
@@ -48,8 +53,34 @@ async function main() {
   // pick latest snapshot id by reading dest directory
   const snapsDir = path.join(dest, 'TimeClaw', 'machines', 'test-machine', 'snapshots');
   const entries = (await fs.readdir(snapsDir)).sort();
-  const last = entries[entries.length - 1];
+  const first = entries[entries.length - 1];
+  await cmdVerify({ snapshotId: first, flags: { config: cfgPath } });
+
+  const manifest1 = await readJson(path.join(snapsDir, first, 'manifest.json'));
+
+  await cmdSnapshot({ flags: { config: cfgPath } });
+
+  const entriesAfter = (await fs.readdir(snapsDir)).sort();
+  const last = entriesAfter[entriesAfter.length - 1];
   await cmdVerify({ snapshotId: last, flags: { config: cfgPath } });
+
+  const manifest2 = await readJson(path.join(snapsDir, last, 'manifest.json'));
+
+  if (!manifest1.files || !manifest2.files) {
+    throw new Error('manifest missing files metadata');
+  }
+  const fileKey = 'openclaw.json';
+  const f1 = manifest1.files[fileKey];
+  const f2 = manifest2.files[fileKey];
+  if (!f1 || !f2) {
+    throw new Error('expected file metadata missing');
+  }
+  if (f1.sha256 !== f2.sha256 || f1.size !== f2.size || f1.mtimeMs !== f2.mtimeMs) {
+    throw new Error('file metadata did not carry forward for unchanged file');
+  }
+  if (manifest2.prev !== manifest1.id) {
+    throw new Error('second snapshot does not reference previous snapshot');
+  }
 
   process.chdir(cwdBefore);
   console.log('SMOKE_OK');
