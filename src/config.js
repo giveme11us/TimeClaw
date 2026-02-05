@@ -11,6 +11,20 @@ const PRESETS = {
     includes: ['openclaw.json', 'MEMORY.md', 'memory/**', 'workspace/skills/**'],
     excludes: ['workspace/tmp/**', 'media/**', 'tmp/**', '**/.git/**', '**/node_modules/**', '**/.DS_Store']
   },
+  openclaw_balanced: {
+    includes: ['openclaw.json', 'MEMORY.md', 'memory/**', 'workspace/**'],
+    excludes: [
+      '**/.git/**',
+      '**/node_modules/**',
+      'workspace/**/tmp/**',
+      'workspace/tmp/**',
+      'workspace/**/dist/**',
+      'workspace/**/build/**',
+      'media/**',
+      'tmp/**',
+      '**/.DS_Store'
+    ]
+  },
   openclaw_all: {
     includes: ['openclaw.json', 'MEMORY.md', 'memory/**', 'workspace/**'],
     excludes: ['workspace/tmp/**', 'workspace/**/tmp/**', 'workspace/**/.git/**', 'media/**', 'tmp/**', '**/.DS_Store']

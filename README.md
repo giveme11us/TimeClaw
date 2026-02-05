@@ -65,6 +65,8 @@ Create `timeclaw.config.json` in your OpenClaw workspace:
 
 Available presets (applied before `includes`/`excludes`):
 - `openclaw`: core OpenClaw data (`openclaw.json`, `MEMORY.md`, `memory/**`, `workspace/skills/**`) with sensible excludes.
+- `openclaw_media`: core OpenClaw data plus media assets.
+- `openclaw_balanced`: broader workspace capture (`workspace/**`) with excludes for temp, build, and VCS folders.
 - `openclaw_all`: broader workspace capture (`workspace/**`) with extra excludes for temp and VCS folders.
 
 If you omit `preset(s)` and `includes`/`excludes`, TimeClaw defaults to `openclaw`.
