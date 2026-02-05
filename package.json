@@ -8,9 +8,12 @@
     "timeclaw": "./src/cli.js"
   },
   "scripts": {
-    "test": "node ./test/smoke.test.js && node ./test/errors.test.js && node ./test/legacy.test.js"
+    "test": "node ./test/smoke.test.js && node ./test/errors.test.js && node ./test/legacy.test.js && node ./test/pack.test.js"
   },
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "tar-stream": "^3.1.7"
   }
 }
