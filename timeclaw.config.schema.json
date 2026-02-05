@@ -18,12 +18,12 @@
     },
     "preset": {
       "type": "string",
-      "description": "Single preset name to apply."
+      "description": "Single preset name to apply (openclaw, openclaw_media, openclaw_all)."
     },
     "presets": {
       "type": "array",
       "items": { "type": "string" },
-      "description": "Preset names to apply before includes/excludes."
+      "description": "Preset names to apply before includes/excludes (openclaw, openclaw_media, openclaw_all)."
     },
     "includes": {
       "type": "array",

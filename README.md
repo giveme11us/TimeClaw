@@ -65,9 +65,13 @@ Create `timeclaw.config.json` in your OpenClaw workspace:
 
 Available presets (applied before `includes`/`excludes`):
 - `openclaw`: core OpenClaw data (`openclaw.json`, `MEMORY.md`, `memory/**`, `workspace/skills/**`) with sensible excludes.
+- `openclaw_media`: same as `openclaw` but **includes `media/**`** for backing up attachments.
 - `openclaw_all`: broader workspace capture (`workspace/**`) with extra excludes for temp and VCS folders.
 
 If you omit `preset(s)` and `includes`/`excludes`, TimeClaw defaults to `openclaw`.
+
+Use `openclaw_media` when you need to preserve images, audio, or other large attachments stored under `media/**`.
+This can significantly increase snapshot size and backup time, so keep it opt-in unless you really need media history.
 
 ### Pattern syntax
 

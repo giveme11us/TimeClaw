@@ -24,6 +24,7 @@ async function readJson(p) {
 
 async function main() {
   const dest = await mkTempDir('timeclaw-dest');
+  const destMedia = await mkTempDir('timeclaw-dest-media');
   const source = await mkTempDir('timeclaw-src');
 
   // fake openclaw structure
@@ -35,6 +36,7 @@ async function main() {
   await fs.writeFile(path.join(source, 'openclaw.json'), '{"hello":true}\n');
   await fs.writeFile(path.join(source, 'MEMORY.md'), '# hi\n');
   await fs.writeFile(path.join(source, 'memory', '2026-01-01.md'), 'x\n');
+  await fs.writeFile(path.join(source, 'media', 'photo.png'), 'data\n');
 
   // should be included by preset openclaw
   await fs.writeFile(path.join(source, 'workspace', 'skills', 'skill-a', 'index.js'), 'console.log("ok")\n');
@@ -70,6 +72,7 @@ async function main() {
   if (!keys1.includes('workspace/skills/skill-a/index.js')) throw new Error('missing included skill file');
   if (keys1.includes('workspace/tmp/cache.txt')) throw new Error('excluded tmp file included');
   if (keys1.includes('memory/draft.tmp')) throw new Error('excluded glob file included');
+  if (keys1.includes('media/photo.png')) throw new Error('openclaw preset should exclude media');
 
   await cmdSnapshot({ flags: { config: cfgPath } });
 
@@ -94,6 +97,28 @@ async function main() {
   if (manifest2.prev !== manifest1.id) {
     throw new Error('second snapshot does not reference previous snapshot');
   }
+
+  const cfgPathMedia = path.join(source, 'timeclaw.media.config.json');
+  await writeJson(cfgPathMedia, {
+    dest: destMedia,
+    machineId: 'test-machine-media',
+    sourceRoot: source,
+    preset: 'openclaw_media',
+    excludes: ['**/*.tmp']
+  });
+
+  await cmdInit({ flags: { dest: destMedia, machine: 'test-machine-media', config: cfgPathMedia } });
+  await cmdSnapshot({ flags: { config: cfgPathMedia } });
+  await cmdList({ flags: { config: cfgPathMedia } });
+
+  const snapsDirMedia = path.join(destMedia, 'TimeClaw', 'machines', 'test-machine-media', 'snapshots');
+  const entriesMedia = (await fs.readdir(snapsDirMedia)).sort();
+  const firstMedia = entriesMedia[entriesMedia.length - 1];
+  await cmdVerify({ snapshotId: firstMedia, flags: { config: cfgPathMedia } });
+
+  const manifestMedia = await readJson(path.join(snapsDirMedia, firstMedia, 'manifest.json'));
+  const keysMedia = Object.keys(manifestMedia.sha256 || {}).sort();
+  if (!keysMedia.includes('media/photo.png')) throw new Error('openclaw_media preset should include media');
 
   process.chdir(cwdBefore);
   console.log('SMOKE_OK');
