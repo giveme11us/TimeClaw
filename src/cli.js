@@ -9,6 +9,7 @@ import { cmdGc } from './commands/gc.js';
 import { cmdSetup } from './commands/setup.js';
 import { cmdExport } from './commands/export.js';
 import { cmdImport } from './commands/import.js';
+import { cmdDiff } from './commands/diff.js';
 import { UserError, asUserError, formatUserError } from './errors.js';
 
 const USAGE = `TimeClaw (timeclaw)
@@ -19,6 +20,7 @@ Commands:
   snapshot [--config <path>] [--label <text>] [--dry-run]
   backup [--config <path>] [--label <text>] [--dry-run]   (alias of snapshot)
   list [--config <path>]
+  diff <snapshotA> <snapshotB> [--config <path>] [--json]
   verify <snapshotId> [--config <path>] [--migrate]
   restore <snapshotId> [--config <path>] [--target <path>] [--dry-run] [--migrate]
   export <snapshotId> [--config <path>] [--out <path>]
@@ -70,6 +72,8 @@ async function main() {
         return await cmdSnapshot({ flags });
       case 'list':
         return await cmdList({ flags });
+      case 'diff':
+        return await cmdDiff({ snapshotA: args[0], snapshotB: args[1], flags });
       case 'verify':
         if (!args[0]) {
           throw new UserError('verify requires <snapshotId>', {

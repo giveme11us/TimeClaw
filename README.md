@@ -92,6 +92,10 @@ node src/cli.js backup
 # list snapshots
 node src/cli.js list
 
+# diff two snapshots (added/removed/changed)
+node src/cli.js diff 2026-02-03T17-00-00.000Z 2026-02-04T17-00-00.000Z
+node src/cli.js diff 2026-02-03T17-00-00.000Z 2026-02-04T17-00-00.000Z --json
+
 # verify (hashes are stored for copied files)
 node src/cli.js verify 2026-02-03T17-00-00.000Z
 

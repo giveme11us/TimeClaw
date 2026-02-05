@@ -8,7 +8,7 @@
     "timeclaw": "./src/cli.js"
   },
   "scripts": {
-    "test": "node ./test/smoke.test.js && node ./test/errors.test.js && node ./test/legacy.test.js && node ./test/pack.test.js"
+    "test": "node ./test/smoke.test.js && node ./test/errors.test.js && node ./test/legacy.test.js && node ./test/pack.test.js && node ./test/diff.test.js"
   },
   "engines": {
     "node": ">=18"
