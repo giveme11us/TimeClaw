@@ -7,6 +7,7 @@ import { cmdRestore } from './commands/restore.js';
 import { cmdPrune } from './commands/prune.js';
 import { cmdGc } from './commands/gc.js';
 import { cmdSetup } from './commands/setup.js';
+import { cmdFsck } from './commands/fsck.js';
 import { UserError, asUserError, formatUserError } from './errors.js';
 
 const USAGE = `TimeClaw (timeclaw)
@@ -21,6 +22,7 @@ Commands:
   restore <snapshotId> [--config <path>] [--target <path>] [--dry-run] [--migrate]
   prune [--config <path>] [--dry-run]
   gc [--config <path>] [--dry-run]
+  fsck [--config <path>] [--verify-hash] [--json]
 `;
 
 function parseArgs(argv) {
@@ -90,6 +92,8 @@ async function main() {
         return await cmdPrune({ flags });
       case 'gc':
         return await cmdGc({ flags });
+      case 'fsck':
+        return await cmdFsck({ flags });
       default:
         throw new UserError(`Unknown command: ${command}`, {
           code: 'USAGE',

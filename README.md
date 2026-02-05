@@ -18,7 +18,7 @@ node src/cli.js help
 ## Agent-first quickstart
 
 Run these from your OpenClaw workspace (the folder that contains `openclaw.json`).
-All commands return JSON so agents can parse `snapshotId` and paths.
+Commands return JSON for machine parsing; `fsck` can emit JSON with `--json` (otherwise it prints a brief summary).
 
 ```bash
 # 1) one-shot setup (creates timeclaw.config.json and initializes DEST/TimeClaw)
@@ -39,6 +39,9 @@ node src/cli.js restore <snapshotId> --target ./restore-out
 # 6) prune + gc (prune removes manifests, gc removes unreferenced objects)
 node src/cli.js prune
 node src/cli.js gc
+
+# 7) integrity check (CAS store)
+node src/cli.js fsck --json
 ```
 
 ## Config (recommended)
@@ -105,13 +108,20 @@ node src/cli.js prune
 # garbage-collect unreferenced objects
 node src/cli.js gc --dry-run
 node src/cli.js gc
+
+# integrity check (existence)
+node src/cli.js fsck
+
+# integrity check (rehash)
+node src/cli.js fsck --verify-hash
 ```
 
-## Maintenance: prune + gc (CAS mode)
+## Maintenance: prune + gc + fsck (CAS mode)
 
 TimeClaw uses a content-addressed store (CAS): snapshots are manifests that point to hashed objects. That means:
 - `prune` deletes snapshot manifests (and their folders) based on retention rules. It does **not** delete the underlying objects.
 - `gc` scans all remaining manifests, keeps referenced objects, and removes **unreferenced** objects to reclaim space.
+- `fsck` validates manifest JSON, checks referenced objects exist, and can optionally rehash objects.
 
 ### Recommended workflow
 
@@ -127,6 +137,10 @@ node src/cli.js gc --dry-run
 
 # 4) reclaim space
 node src/cli.js gc
+
+# 5) verify integrity
+node src/cli.js fsck
+node src/cli.js fsck --verify-hash
 ```
 
 ### Safety notes
@@ -134,6 +148,7 @@ node src/cli.js gc
 - Prefer `--dry-run` first. Both commands return a JSON summary so you can confirm what would be removed.
 - Run `gc` only after you are confident your snapshots are complete and their `manifest.json` files exist. Objects referenced by missing or corrupt manifests will be treated as unreferenced and eligible for removal.
 - If you keep snapshots for legal/restore reasons, do not run `prune` (and therefore `gc`) until you are ready to discard those snapshots.
+- Run `fsck --verify-hash` before `gc` if you suspect storage corruption; it only reads data and does not mutate.
 
 ## Destination layout
 
