@@ -28,3 +28,7 @@ export function stagingDir(dest, machineId) {
 export function latestPointerPath(dest, machineId) {
   return path.join(machineRoot(dest, machineId), 'latest.json');
 }
+
+export function lockDir(dest, machineId) {
+  return path.join(machineRoot(dest, machineId), 'lock');
+}

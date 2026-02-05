@@ -19,6 +19,13 @@ node src/cli.js help
 
 Run these from your OpenClaw workspace (the folder that contains `openclaw.json`).
 All commands return JSON so agents can parse `snapshotId` and paths.
+Snapshot/restore/prune/gc/verify/list commands use a per-destination lock to prevent concurrent runs.
+If a lock is left behind (for example after a crash), re-run with `--force-lock` to break it.
+
+## Concurrency
+
+TimeClaw takes a per-(dest, machineId) lock at `TimeClaw/machines/<machineId>/lock` to prevent concurrent snapshot/restore/prune/gc/verify/list operations.
+If a lock exists, commands fail with `LOCKED` and point at the lock metadata; re-run with `--force-lock` only if you are sure no other TimeClaw command is running.
 
 ```bash
 # 1) one-shot setup (creates timeclaw.config.json and initializes DEST/TimeClaw)
