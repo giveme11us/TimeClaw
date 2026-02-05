@@ -36,7 +36,11 @@ node src/cli.js verify <snapshotId>
 # 5) restore a snapshot to a new folder
 node src/cli.js restore <snapshotId> --target ./restore-out
 
-# 6) prune + gc (prune removes manifests, gc removes unreferenced objects)
+# 6) export/import a snapshot pack (portable archive)
+node src/cli.js export <snapshotId> --out ./snapshot-pack.tgz
+node src/cli.js import ./snapshot-pack.tgz
+
+# 7) prune + gc (prune removes manifests, gc removes unreferenced objects)
 node src/cli.js prune
 node src/cli.js gc
 ```
@@ -94,6 +98,10 @@ node src/cli.js verify 2026-02-03T17-00-00.000Z
 # restore snapshot to new folder
 node src/cli.js restore 2026-02-03T17-00-00.000Z --target ./restore-out
 
+# export/import a snapshot pack (portable archive)
+node src/cli.js export 2026-02-03T17-00-00.000Z --out ./snapshot-pack.tgz
+node src/cli.js import ./snapshot-pack.tgz
+
 # migrate a legacy snapshot tree into CAS + manifest (optional)
 node src/cli.js verify 2026-02-03T17-00-00.000Z --migrate
 node src/cli.js restore 2026-02-03T17-00-00.000Z --migrate
@@ -112,6 +120,15 @@ node src/cli.js gc
 TimeClaw uses a content-addressed store (CAS): snapshots are manifests that point to hashed objects. That means:
 - `prune` deletes snapshot manifests (and their folders) based on retention rules. It does **not** delete the underlying objects.
 - `gc` scans all remaining manifests, keeps referenced objects, and removes **unreferenced** objects to reclaim space.
+
+## Snapshot packs (export/import)
+
+`export` bundles a snapshot manifest plus all referenced CAS objects into a portable `tgz` pack. Packs contain:
+- `pack.json` (metadata with machineId, snapshotId, createdAt)
+- `manifest.json`
+- `objects/<prefix>/<sha256>`
+
+`import` validates the pack structure, verifies object hashes, writes missing objects into the CAS store, and installs the manifest under `snapshots/<id>/manifest.json`. Use `--force` to overwrite an existing manifest.
 
 ### Recommended workflow
 

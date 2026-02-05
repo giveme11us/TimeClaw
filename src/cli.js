@@ -7,6 +7,8 @@ import { cmdRestore } from './commands/restore.js';
 import { cmdPrune } from './commands/prune.js';
 import { cmdGc } from './commands/gc.js';
 import { cmdSetup } from './commands/setup.js';
+import { cmdExport } from './commands/export.js';
+import { cmdImport } from './commands/import.js';
 import { UserError, asUserError, formatUserError } from './errors.js';
 
 const USAGE = `TimeClaw (timeclaw)
@@ -19,6 +21,8 @@ Commands:
   list [--config <path>]
   verify <snapshotId> [--config <path>] [--migrate]
   restore <snapshotId> [--config <path>] [--target <path>] [--dry-run] [--migrate]
+  export <snapshotId> [--config <path>] [--out <path>]
+  import <packPath> [--config <path>] [--force]
   prune [--config <path>] [--dry-run]
   gc [--config <path>] [--dry-run]
 `;
@@ -86,6 +90,10 @@ async function main() {
           });
         }
         return await cmdRestore({ snapshotId: args[0], flags });
+      case 'export':
+        return await cmdExport({ snapshotId: args[0], flags });
+      case 'import':
+        return await cmdImport({ packPath: args[0], flags });
       case 'prune':
         return await cmdPrune({ flags });
       case 'gc':
