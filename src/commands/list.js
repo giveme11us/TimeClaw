@@ -4,6 +4,7 @@ import { loadConfig } from '../config.js';
 import { snapshotsDir } from '../layout.js';
 import { pathExists, safeReadJson } from '../fsops.js';
 import { detectSnapshotLayout } from '../legacy.js';
+import { withMachineLock } from '../lock.js';
 
 function tsFromId(id) {
   // id is ISO with ':' replaced by '-'
@@ -21,38 +22,45 @@ function tsFromId(id) {
 
 export async function cmdList({ flags }) {
   const { config } = await loadConfig({ configPath: flags.config, requireInitialized: true });
-  const dir = snapshotsDir(config.dest, config.machineId);
-  if (!(await pathExists(dir))) {
-    console.log(JSON.stringify({ snapshots: [] }, null, 2));
-    return;
-  }
+  const forceLock = !!flags['force-lock'] || !!flags.forceLock;
 
-  const entries = await fs.readdir(dir, { withFileTypes: true });
-  const snaps = [];
-
-  for (const ent of entries) {
-    if (!ent.isDirectory()) continue;
-    const id = ent.name;
-    const snapDir = path.join(dir, id);
-    const manifestPath = path.join(snapDir, 'manifest.json');
-    let manifest = null;
-    let legacy = false;
-
-    if (await pathExists(manifestPath)) {
-      try { manifest = await safeReadJson(manifestPath); } catch {}
-    }
-
-    if (!manifest || !manifest.sha256) {
-      const layout = await detectSnapshotLayout(snapDir);
-      legacy = layout.layout === 'legacy-tree';
-      if (layout.layout === 'cas' && layout.manifest) {
-        manifest = layout.manifest;
+  await withMachineLock(
+    { dest: config.dest, machineId: config.machineId, command: 'list', force: forceLock },
+    async () => {
+      const dir = snapshotsDir(config.dest, config.machineId);
+      if (!(await pathExists(dir))) {
+        console.log(JSON.stringify({ snapshots: [] }, null, 2));
+        return;
       }
+
+      const entries = await fs.readdir(dir, { withFileTypes: true });
+      const snaps = [];
+
+      for (const ent of entries) {
+        if (!ent.isDirectory()) continue;
+        const id = ent.name;
+        const snapDir = path.join(dir, id);
+        const manifestPath = path.join(snapDir, 'manifest.json');
+        let manifest = null;
+        let legacy = false;
+
+        if (await pathExists(manifestPath)) {
+          try { manifest = await safeReadJson(manifestPath); } catch {}
+        }
+
+        if (!manifest || !manifest.sha256) {
+          const layout = await detectSnapshotLayout(snapDir);
+          legacy = layout.layout === 'legacy-tree';
+          if (layout.layout === 'cas' && layout.manifest) {
+            manifest = layout.manifest;
+          }
+        }
+
+        snaps.push({ id, tsMs: tsFromId(id), manifest, legacy });
+      }
+
+      snaps.sort((a, b) => a.tsMs - b.tsMs);
+      console.log(JSON.stringify({ snapshots: snaps.map(({ id, tsMs, manifest, legacy }) => ({ id, tsMs, label: manifest?.label || null, files: manifest?.stats?.files ?? null, legacy })) }, null, 2));
     }
-
-    snaps.push({ id, tsMs: tsFromId(id), manifest, legacy });
-  }
-
-  snaps.sort((a, b) => a.tsMs - b.tsMs);
-  console.log(JSON.stringify({ snapshots: snaps.map(({ id, tsMs, manifest, legacy }) => ({ id, tsMs, label: manifest?.label || null, files: manifest?.stats?.files ?? null, legacy })) }, null, 2));
+  );
 }

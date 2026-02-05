@@ -14,13 +14,13 @@ const USAGE = `TimeClaw (timeclaw)
 Commands:
   setup --dest <path> [--source <path>] [--machine <id>] [--config <path>] [--force]
   init --dest <path> [--machine <id>] [--config <path>]
-  snapshot [--config <path>] [--label <text>] [--dry-run]
-  backup [--config <path>] [--label <text>] [--dry-run]   (alias of snapshot)
-  list [--config <path>]
-  verify <snapshotId> [--config <path>] [--migrate]
-  restore <snapshotId> [--config <path>] [--target <path>] [--dry-run] [--migrate]
-  prune [--config <path>] [--dry-run]
-  gc [--config <path>] [--dry-run]
+  snapshot [--config <path>] [--label <text>] [--dry-run] [--force-lock]
+  backup [--config <path>] [--label <text>] [--dry-run] [--force-lock]   (alias of snapshot)
+  list [--config <path>] [--force-lock]
+  verify <snapshotId> [--config <path>] [--migrate] [--force-lock]
+  restore <snapshotId> [--config <path>] [--target <path>] [--dry-run] [--migrate] [--force-lock]
+  prune [--config <path>] [--dry-run] [--force-lock]
+  gc [--config <path>] [--dry-run] [--force-lock]
 `;
 
 function parseArgs(argv) {
